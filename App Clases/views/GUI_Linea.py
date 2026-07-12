@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from views.Configuracion_Datos_Linea import Ventana_Datos
+from controllers.Controller_Linea import Controlador_Linea
 import sys
 import time
 from datetime import datetime
@@ -12,7 +13,9 @@ class Visual_Linea(QMainWindow):
         self.setWindowTitle("Sistema de Gestión Tecnored - Linea")
         self.setGeometry(200, 100, 700, 500)
         self.ventana_datos = Ventana_Datos()
+        self.controlador_linea = Controlador_Linea()
         self._Configuracion_GUI()
+        self.ventana_datos.fin_guardado.connect(self._cargar_tabla)
 
 
     def _Configuracion_GUI(self):
@@ -41,6 +44,7 @@ class Visual_Linea(QMainWindow):
         self.Lista_Datos = QTableView()
         self.Modelo_Lista_Datos = QStandardItemModel()
         self.Lista_Datos.setModel(self.Modelo_Lista_Datos)
+        self._cargar_tabla()
         self.Layout_Interfaz.addWidget(self.Lista_Datos)
 
         # Botones (Los botones con las funciones: Agregar - Editar - Eliminar - Volver)
@@ -57,13 +61,32 @@ class Visual_Linea(QMainWindow):
         self.Volver_Btn.clicked.connect(lambda: print('Boton Volver'))
         self.Layout_Botones.addWidget(self.Volver_Btn)
 
+    def _cargar_tabla(self):
+        datos = self.Obtener_Datos()
+        self.Modelo_Lista_Datos.clear()
+        self.Modelo_Lista_Datos.setHorizontalHeaderLabels([
+            "ID_Marca",
+            "Nombre",
+            "Estado"
+        ])
+        self.Lista_Datos.verticalHeader().setVisible(False)
+        
+        if datos:
+            for dato in datos:
+                self.Modelo_Lista_Datos.appendRow([
+                    QStandardItem(dato['ID_Linea']),
+                    QStandardItem(dato['Nombre']),
+                    QStandardItem(dato['Estado'])
+                ])
+
+    def Obtener_Datos(self):
+        return self.controlador_linea._Cargar_JSON()
 
 
     def _Agregar_Dato(self):
         try:
             print(f'[{datetime.now()}]// Agregando Dato Nuevo')
             self.ventana_datos.iniciar()
-            self.show()
             print(f'[{datetime.now()}]// Ventana de Agregar Texto Abierta Correctamente')
         except Exception as e:
             print(f'[{datetime.now()}// ERROR: {e}]')

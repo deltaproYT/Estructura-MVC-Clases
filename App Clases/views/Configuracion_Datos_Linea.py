@@ -1,22 +1,23 @@
 from PyQt6.QtWidgets import *
+from PyQt6.QtCore import pyqtSignal 
 from controllers.Controller_Linea import Controlador_Linea
 from datetime import datetime
+from pathlib import Path
 
 import sys
 
-class Ventana_Datos(QMainWindow):
+class Ventana_Datos(QDialog):
+    fin_guardado = pyqtSignal()
+    
     def __init__(self):
         super().__init__()
         self.setGeometry(450, 200, 500, 400)
-        self.Widget_Base = QWidget()
         self.controlador_linea = Controlador_Linea()
-        self.setCentralWidget(self.Widget_Base)
         self.fl_status = True
 
     def _Ventana_Agregar(self):
         self.setWindowTitle('Agregar Dato')
-        self.Layout_Agregar = QVBoxLayout()
-        self.Widget_Base.setLayout(self.Layout_Agregar)
+        self.Layout_Agregar = QVBoxLayout(self)
         self.Label_Nombre = QLabel('Por favor, Ingrese el nombre')
         self.Linea_Nombre = QLineEdit()
         self.Label_Estado = QLabel('Por favor, Ingrese el estado')
@@ -36,8 +37,25 @@ class Ventana_Datos(QMainWindow):
 
     def _Guardar(self, nombre, estado):
         try:
+            if not self.Linea_Nombre.text() or not self.Linea_Estado.text():
+                Advertencia_Dato_Incompleto = QMessageBox.question(
+                    self,
+                    "¡AVERTENCIA!: Informacion Incompleta",
+                    "Hay un Campo Vacio\n¿Desea Subir los datos?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                    )
+                if Advertencia_Dato_Incompleto == QMessageBox.StandardButton.No:
+                    return
+            
             self.controlador_linea.Guardar_Datos(nombre= nombre, estado= estado)
+            QMessageBox.information(
+                self,
+                "Correcto",
+                "Los datos fueron guardados."
+            )
             print(f'[{datetime.now()}]// Datos Guardados Correctamente')
+            self.fin_guardado.emit()
+            self.accept()
         except Exception as e:
             print(f'[{datetime.now()}]// ERROR: {e}')
 
@@ -46,7 +64,7 @@ class Ventana_Datos(QMainWindow):
             self._Ventana_Agregar()
         self.Linea_Nombre.setText('')
         self.Linea_Estado.setText('')
-        self.show()
+        self.exec()
 
 
 if __name__ == '__main__':
