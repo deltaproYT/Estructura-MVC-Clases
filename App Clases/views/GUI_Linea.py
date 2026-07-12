@@ -2,8 +2,6 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from views.Configuracion_Datos_Linea import Ventana_Datos
 from controllers.Controller_Linea import Controlador_Linea
-import sys
-import time
 from datetime import datetime
 
 

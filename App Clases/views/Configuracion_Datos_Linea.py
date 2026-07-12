@@ -2,8 +2,6 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtCore import pyqtSignal 
 from controllers.Controller_Linea import Controlador_Linea
 from datetime import datetime
-from pathlib import Path
-
 import sys
 
 class Ventana_Datos(QDialog):
