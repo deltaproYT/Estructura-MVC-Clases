@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import pyqtSignal 
 from controllers.Controller_Linea import Controlador_Linea
-from datetime import datetime
+from utils.excepciones import InvalidData
 import sys
 
 class Ventana_Datos(QDialog):
@@ -22,37 +22,31 @@ class Ventana_Datos(QDialog):
             if not campo ["editable"]:
                 continue
 
-            label = QLabel(f"Ingrese {campo['campo']}")
-            linea = QLineEdit()
+            texto = campo.get(
+                'descripcion',
+                f"Ingrese {campo['campo']}"
+                )
+            label = QLabel(texto)
+            widget = QLineEdit()
 
-            self.inputs[campo["campo"]] = linea
+            self.inputs[campo["campo"]] = widget
             self.Layout_Agregar.addWidget(label)
-            self.Layout_Agregar.addWidget(linea)
+            self.Layout_Agregar.addWidget(widget)
 
         self.Layout_Botones = QHBoxLayout()
         self.Layout_Agregar.addLayout(self.Layout_Botones)
         botones = {
-            'Cerrar': self.close(), 
+            'Cerrar': self.close, 
             'Guardar': self._Guardar}
-        for btn, act in botones.items():
-            self.btn = QPushButton(f'{btn}')
-            self.btn.clicked.connect(act)
-            self.Layout_Botones.addWidget(self.btn)
+        for texto, accion in botones.items():
+            boton = QPushButton(texto)
+            boton.clicked.connect(accion)
+            self.Layout_Botones.addWidget(boton)
 
         self.fl_status = False
 
     def _Guardar(self):
         try:
-            if any(not widget.text() for widget in self.inputs.values()):
-                Advertencia_Dato_Incompleto = QMessageBox.question(
-                    self,
-                    "¡AVERTENCIA!: Informacion Incompleta",
-                    "Hay un Campo Vacio\n¿Desea Subir los datos?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-                    )
-                if Advertencia_Dato_Incompleto == QMessageBox.StandardButton.No:
-                    return
-            
             datos = {
                 nombre: widget.text() 
                 for nombre, widget in self.inputs.items()
@@ -65,11 +59,22 @@ class Ventana_Datos(QDialog):
                 "Correcto",
                 "Los datos fueron guardados."
             )
-            print(f'[{datetime.now()}]// Datos Guardados Correctamente')
+            print(f'Datos Guardados Correctamente')
             self.fin_guardado.emit()
             self.accept()
+
+        except InvalidData as e:
+            QMessageBox.warning(
+                self,
+                'Datos Invalidos',
+                str(e)
+            )
+
         except Exception as e:
-            print(f'[{datetime.now()}]// ERROR: {e}')
+            print(f'// ERROR: {e}')
+
+    def _Crear_Widget(self, campo):
+        return QLineEdit()
 
     def iniciar_agg_v(self):
         if self.fl_status:

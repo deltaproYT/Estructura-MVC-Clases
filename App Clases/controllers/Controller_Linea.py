@@ -156,7 +156,6 @@ class Controlador_Linea():
                 f'El campo "{campo["campo"]}" debe ser de tipo {tipo.__name__}.'
             )
 
-
     def _Aplicar_Default(self, campo , valor):
         if valor in (None, ""):
             return campo.get('default', valor)
@@ -209,7 +208,6 @@ class Controlador_Linea():
                 raise InvalidData(
                     f"El campo {campo['campo']} debe tener como maximo {maximo} caracteres"
                 )
-
 
     def _Validar_Unico(self, campo, valor, id_actual=None):
         if not campo.get('unico'):
