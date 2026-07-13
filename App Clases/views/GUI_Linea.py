@@ -1,20 +1,22 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
+from PyQt6.QtCore import Qt, pyqtSignal
 from views.Configuracion_Datos_Linea import Ventana_Datos
 from controllers.Controller_Linea import Controlador_Linea
 from datetime import datetime
 
 
 class Visual_Linea(QMainWindow):
+
     def __init__(self):
         super().__init__()
+        self.Edit_Mode = True
         self.setWindowTitle("Sistema de Gestión Tecnored - Linea")
         self.setGeometry(200, 100, 700, 500)
         self.ventana_datos = Ventana_Datos()
         self.controlador_linea = Controlador_Linea()
         self._Configuracion_GUI()
         self.ventana_datos.fin_guardado.connect(self._cargar_tabla)
-
 
     def _Configuracion_GUI(self):
         # Widget Base
@@ -28,6 +30,7 @@ class Visual_Linea(QMainWindow):
         # QLineEdit
         self.Informacion_Xtra = QLabel()
         self.Informacion_Xtra.setText('Escoja un Item Para ver datos extra')
+
         self.Layout_Base.addWidget(self.Informacion_Xtra)
 
         # Layout Botones y Tabla (Izq: QVBoxLayout para poner los botones; Der: QTableView para leer los archivos)
@@ -44,13 +47,15 @@ class Visual_Linea(QMainWindow):
         self.Lista_Datos.setModel(self.Modelo_Lista_Datos)
         self._cargar_tabla()
         self.Layout_Interfaz.addWidget(self.Lista_Datos)
+        if self.Edit_Mode:
+            self.Lista_Datos.clicked.connect(self._toggle_click)
 
         # Botones (Los botones con las funciones: Agregar - Editar - Eliminar - Volver)
         self.Agregar_Btn = QPushButton('Agregar')
         self.Agregar_Btn.clicked.connect(self._Agregar_Dato)
         self.Layout_Botones.addWidget(self.Agregar_Btn)
         self.Editar_Btn = QPushButton('Editar')
-        self.Editar_Btn.clicked.connect(lambda: print('Boton Editar'))
+        self.Editar_Btn.clicked.connect(self._Toggle_Edit_Mode)
         self.Layout_Botones.addWidget(self.Editar_Btn)
         self.Eliminar_Btn = QPushButton('Eliminar')
         self.Eliminar_Btn.clicked.connect(lambda: print('Boton Eliminar'))
@@ -71,24 +76,59 @@ class Visual_Linea(QMainWindow):
         
         if datos:
             for dato in datos:
+                ID_Marca = QStandardItem(dato['ID_Linea'])
+                ID_Marca.setEditable(False)
+                Nombre = QStandardItem(dato['Nombre'])
+                Estado = QStandardItem(dato['Estado'])
                 self.Modelo_Lista_Datos.appendRow([
-                    QStandardItem(dato['ID_Linea']),
-                    QStandardItem(dato['Nombre']),
-                    QStandardItem(dato['Estado'])
+                    ID_Marca,
+                    Nombre,
+                    Estado
                 ])
+        self.Lista_Datos.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
 
     def Obtener_Datos(self):
         return self.controlador_linea._Cargar_JSON()
 
-
     def _Agregar_Dato(self):
         try:
             print(f'[{datetime.now()}]// Agregando Dato Nuevo')
-            self.ventana_datos.iniciar()
+            self.ventana_datos.iniciar_agg_v()
             print(f'[{datetime.now()}]// Ventana de Agregar Texto Abierta Correctamente')
         except Exception as e:
             print(f'[{datetime.now()}// ERROR: {e}]')
 
+    def _Guardar_Cambios(self):
+        datos = []
+        for fila in range(self.Modelo_Lista_Datos.rowCount()):
+            datos.append({
+                "ID_Linea": self.Modelo_Lista_Datos.item(fila, 0).text(),
+                "Nombre": self.Modelo_Lista_Datos.item(fila, 1).text(),
+                "Estado": self.Modelo_Lista_Datos.item(fila, 2).text()
+            })
+        self.controlador_linea._Guarda_JSON(lista_datos=datos)
 
-if __name__ == '__main__': #Pruebas
-    pass
+    def _Toggle_Edit_Mode(self):
+        if self.Edit_Mode: # Modo Edición Activado - True
+            self.Lista_Datos.setEditTriggers(QAbstractItemView.EditTrigger.DoubleClicked)
+            self.Lista_Datos.clicked.connect(lambda: None)
+            self.Informacion_Xtra.setText('🔴 MODO EDICION ACTIVO 🔴')
+        else: # Modo Edición Desactivado - False
+            self.Lista_Datos.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+            self.Informacion_Xtra.setText('Escoja un Item Para ver datos extra')
+            self._Guardar_Cambios()
+        self.Edit_Mode = not self.Edit_Mode
+
+    def _toggle_click(self, indice):
+        if  not self.Edit_Mode: 
+            return
+
+        if not indice.isValid():
+            return
+
+        header = self.Modelo_Lista_Datos.headerData(
+            indice.column(),
+            Qt.Orientation.Horizontal
+        )
+
+        self.Informacion_Xtra.setText(f"{header} = {indice.data()}")

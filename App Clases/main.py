@@ -7,6 +7,7 @@ from datetime import datetime
 
 
 class Main(QMainWindow):
+
     def __init__(self):
         super().__init__()
         self.Visual_Marca = None
@@ -57,7 +58,6 @@ class Main(QMainWindow):
         self.Visual_Categoria = Visual_Categoria()
         self.Visual_Categoria.show()
         self.close()
-
 
     @staticmethod
     def iniciar_interfaz_principal():

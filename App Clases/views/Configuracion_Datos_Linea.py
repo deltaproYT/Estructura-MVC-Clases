@@ -6,7 +6,7 @@ import sys
 
 class Ventana_Datos(QDialog):
     fin_guardado = pyqtSignal()
-    
+
     def __init__(self):
         super().__init__()
         self.setGeometry(450, 200, 500, 400)
@@ -16,16 +16,24 @@ class Ventana_Datos(QDialog):
     def _Ventana_Agregar(self):
         self.setWindowTitle('Agregar Dato')
         self.Layout_Agregar = QVBoxLayout(self)
-        self.Label_Nombre = QLabel('Por favor, Ingrese el nombre')
-        self.Linea_Nombre = QLineEdit()
-        self.Label_Estado = QLabel('Por favor, Ingrese el estado')
-        self.Linea_Estado = QLineEdit()
-        widgets = (self.Label_Nombre, self.Linea_Nombre, self.Label_Estado, self.Linea_Estado)
-        for wgt in widgets:
-            self.Layout_Agregar.addWidget(wgt)
+        self.inputs = {}
+        for campo in self.controlador_linea.Model_Linea.SCHEMA:
+            
+            if not campo ["editable"]:
+                continue
+
+            label = QLabel(f"Ingrese {campo['campo']}")
+            linea = QLineEdit()
+
+            self.inputs[campo["campo"]] = linea
+            self.Layout_Agregar.addWidget(label)
+            self.Layout_Agregar.addWidget(linea)
+
         self.Layout_Botones = QHBoxLayout()
         self.Layout_Agregar.addLayout(self.Layout_Botones)
-        botones = {'cerrar_btn': lambda: self.close(), 'guardar_datos': lambda: self._Guardar(nombre=self.Linea_Nombre.text(), estado=self.Linea_Estado.text())}
+        botones = {
+            'Cerrar': self.close(), 
+            'Guardar': self._Guardar}
         for btn, act in botones.items():
             self.btn = QPushButton(f'{btn}')
             self.btn.clicked.connect(act)
@@ -33,9 +41,9 @@ class Ventana_Datos(QDialog):
 
         self.fl_status = False
 
-    def _Guardar(self, nombre, estado):
+    def _Guardar(self):
         try:
-            if not self.Linea_Nombre.text() or not self.Linea_Estado.text():
+            if any(not widget.text() for widget in self.inputs.values()):
                 Advertencia_Dato_Incompleto = QMessageBox.question(
                     self,
                     "¡AVERTENCIA!: Informacion Incompleta",
@@ -45,7 +53,13 @@ class Ventana_Datos(QDialog):
                 if Advertencia_Dato_Incompleto == QMessageBox.StandardButton.No:
                     return
             
-            self.controlador_linea.Guardar_Datos(nombre= nombre, estado= estado)
+            datos = {
+                nombre: widget.text() 
+                for nombre, widget in self.inputs.items()
+            }
+
+            self.controlador_linea._Guardar_Datos(**datos)
+
             QMessageBox.information(
                 self,
                 "Correcto",
@@ -57,16 +71,9 @@ class Ventana_Datos(QDialog):
         except Exception as e:
             print(f'[{datetime.now()}]// ERROR: {e}')
 
-    def iniciar(self):
+    def iniciar_agg_v(self):
         if self.fl_status:
             self._Ventana_Agregar()
-        self.Linea_Nombre.setText('')
-        self.Linea_Estado.setText('')
+        for widget in self.inputs.values():
+            widget.clear()
         self.exec()
-
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ventana = Ventana_Datos()
-    ventana.show()
-    sys.exit(app.exec())

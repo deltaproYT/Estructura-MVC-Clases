@@ -1,0 +1,12 @@
+[
+    {
+        "ID_Linea": "1",
+        "Nombre": "Jordy",
+        "Estado": "Esposo"
+    },
+    {
+        "ID_Linea": "2",
+        "Nombre": "Yiliam",
+        "Estado": "Esposa"
+    }
+]
