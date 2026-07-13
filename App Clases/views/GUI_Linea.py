@@ -16,7 +16,7 @@ class Visual_Linea(QMainWindow):
         self.ventana_datos = Ventana_Datos()
         self.controlador_linea = Controlador_Linea()
         self._Configuracion_GUI()
-        self.ventana_datos.fin_guardado.connect(self._cargar_tabla)
+        self.ventana_datos.fin_guardado.connect(self._Cargar_Tabla)
 
     def _Configuracion_GUI(self):
         # Widget Base
@@ -45,10 +45,10 @@ class Visual_Linea(QMainWindow):
         self.Lista_Datos = QTableView()
         self.Modelo_Lista_Datos = QStandardItemModel()
         self.Lista_Datos.setModel(self.Modelo_Lista_Datos)
-        self._cargar_tabla()
+        self._Cargar_Tabla()
         self.Layout_Interfaz.addWidget(self.Lista_Datos)
         if self.Edit_Mode:
-            self.Lista_Datos.clicked.connect(self._toggle_click)
+            self.Lista_Datos.clicked.connect(self._Actualizar_Informacion)
 
         # Botones (Los botones con las funciones: Agregar - Editar - Eliminar - Volver)
         self.Agregar_Btn = QPushButton('Agregar')
@@ -64,31 +64,40 @@ class Visual_Linea(QMainWindow):
         self.Volver_Btn.clicked.connect(lambda: print('Boton Volver'))
         self.Layout_Botones.addWidget(self.Volver_Btn)
 
-    def _cargar_tabla(self):
-        datos = self.Obtener_Datos()
+    def _Cargar_Tabla(self):
+        datos = self._Cargar_Datos()
         self.Modelo_Lista_Datos.clear()
-        self.Modelo_Lista_Datos.setHorizontalHeaderLabels([
-            "ID_Marca",
-            "Nombre",
-            "Estado"
-        ])
+        headers = [
+            campo["campo"]
+            for campo in self.controlador_linea.Model_Linea.SCHEMA
+            ]
+        self.Modelo_Lista_Datos.setHorizontalHeaderLabels(headers)
         self.Lista_Datos.verticalHeader().setVisible(False)
         
         if datos:
             for dato in datos:
-                ID_Marca = QStandardItem(dato['ID_Linea'])
-                ID_Marca.setEditable(False)
-                Nombre = QStandardItem(dato['Nombre'])
-                Estado = QStandardItem(dato['Estado'])
-                self.Modelo_Lista_Datos.appendRow([
-                    ID_Marca,
-                    Nombre,
-                    Estado
-                ])
+                fila = []
+
+                for campo in self.controlador_linea.Model_Linea.SCHEMA:
+                    nombre = campo["campo"]
+
+                    item = QStandardItem(str(dato.get(nombre, "")))
+
+                    item.setEditable(
+                        campo.get('editable', True)
+                    )
+
+                    fila.append(item)
+
+                self.Modelo_Lista_Datos.appendRow(fila)
+
         self.Lista_Datos.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
 
-    def Obtener_Datos(self):
-        return self.controlador_linea._Cargar_JSON()
+    def _Guardar_Datos(self, datos):
+        return self.controlador_linea._Guarda_JSON(datos)
+
+    def _Cargar_Datos(self):
+        return self.controlador_linea._Obtener_Datos()
 
     def _Agregar_Dato(self):
         try:
@@ -101,17 +110,19 @@ class Visual_Linea(QMainWindow):
     def _Guardar_Cambios(self):
         datos = []
         for fila in range(self.Modelo_Lista_Datos.rowCount()):
-            datos.append({
-                "ID_Linea": self.Modelo_Lista_Datos.item(fila, 0).text(),
-                "Nombre": self.Modelo_Lista_Datos.item(fila, 1).text(),
-                "Estado": self.Modelo_Lista_Datos.item(fila, 2).text()
-            })
-        self.controlador_linea._Guarda_JSON(lista_datos=datos)
+            registro = {}
+
+            for columna, campo in enumerate(self.controlador_linea.Model_Linea.SCHEMA):
+                registro[campo["campo"]] = (
+                    self.Modelo_Lista_Datos.item(fila, columna).text()
+                )
+            
+            datos.append(registro)
+        self._Guardar_Datos(datos)
 
     def _Toggle_Edit_Mode(self):
         if self.Edit_Mode: # Modo Edición Activado - True
             self.Lista_Datos.setEditTriggers(QAbstractItemView.EditTrigger.DoubleClicked)
-            self.Lista_Datos.clicked.connect(lambda: None)
             self.Informacion_Xtra.setText('🔴 MODO EDICION ACTIVO 🔴')
         else: # Modo Edición Desactivado - False
             self.Lista_Datos.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -119,7 +130,7 @@ class Visual_Linea(QMainWindow):
             self._Guardar_Cambios()
         self.Edit_Mode = not self.Edit_Mode
 
-    def _toggle_click(self, indice):
+    def _Actualizar_Informacion(self, indice):
         if  not self.Edit_Mode: 
             return
 

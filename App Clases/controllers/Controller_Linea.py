@@ -126,6 +126,8 @@ class Controlador_Linea():
             if campo.get('pk'):
                 return campo["campo"]
 
+    def _Obtener_Datos(self):
+        return self._Cargar_JSON()
 #i_2 <---- Filtros de Validacion ---->
     def _Validar_Campo(self, campo, valor):
         self._Validar_Requerido(campo, valor)
@@ -134,7 +136,6 @@ class Controlador_Linea():
         self._Validar_Min(campo, valor)
         self._Validar_Max(campo, valor)
         self._Validar_Unico(campo, valor)
-
 
     def _Validar_Requerido(self, campo, valor):
         if campo.get("requerido") and valor in (None, ""):
